@@ -49,21 +49,16 @@ In Claude Code:
 
 Run it again on the same issue anytime to resume.
 
-## Agent Skill
+## Agent Skill 🧩
 
-michi is a Claude Code **plugin**, and its `/issue` workflow runs through Claude Code's
-[Agent Skills](https://code.claude.com/docs/en/skills) system — Claude Code unifies slash
-commands and skills, so once installed michi is surfaced as the **`michi:issue`** skill and
-invoked as `/issue <number>`. It's a deliberately **user-invoked** workflow: you run it on a
-specific issue. That's the right shape for a side-effecting command (it pushes branches and
-opens PRs) — you don't want it auto-firing.
+michi runs through Claude Code's [Agent Skills](https://code.claude.com/docs/en/skills) system, so once installed it's surfaced as the **`michi:issue`** skill and invoked as `/issue <number>`. It's deliberately **user-invoked** — a side-effecting command (it pushes branches and opens PRs) shouldn't auto-fire.
 
-## Safety
+## Safety 🔒
 
-The command is scoped via `allowed-tools` to specific `gh`/`git` subcommands. Within that scope it **will** push its own `issue-<n>` branch, open/maintain a **draft** PR, wait for CI and push bounded fix commits to make it pass, and mark that PR ready when every task is done and CI is green. It will **never** merge, force-push, push your default branch, or close the issue — those stay yours. (The issue closes automatically when *you* merge the PR, via `Closes #<issue>`.) Work is one commit per task on a dedicated branch, so it's easy to inspect, and the draft PR is easy to close if you don't want it.
+The command is scoped via `allowed-tools` to specific `gh`/`git` subcommands, works on a dedicated `issue-<n>` branch, and makes one commit per task — easy to inspect. It will **never** merge, force-push, push your default branch, or close the issue; those stay yours. (The issue closes when *you* merge the PR, via `Closes #<issue>`.)
 
-> **Note:** this is a behavior change from earlier versions, which kept everything local and never pushed. michi now pushes to a non-default branch and opens a draft PR automatically.
+> **Note:** earlier versions stayed local and never pushed; michi now pushes to a non-default branch and opens a draft PR automatically.
 
-## License
+## License 📄
 
 MIT — see [LICENSE](LICENSE).
