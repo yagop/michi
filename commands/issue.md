@@ -6,8 +6,6 @@ allowed-tools: >-
   Bash(gh repo view:*),
   Bash(gh issue view:*),
   Bash(gh issue comment:*),
-  Bash(gh issue edit:*),
-  Bash(gh label list:*),
   Bash(gh pr create:*),
   Bash(gh pr view:*),
   Bash(gh pr list:*),
