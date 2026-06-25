@@ -162,7 +162,14 @@ Each line's `<!--m:…-->` is its **stable id** — the key everything matches o
 
 ## 3. Reconcile & resume
 
-The marker block is the plan; **git is the truth for what's done.** Rebuild from git:
+The marker block is the plan; **git is the truth for what's done.**
+
+**First, re-enter the worktree.** A prior run created an `issue-<issue>` worktree; find it with
+`git worktree list` and `cd` into its path. If the branch exists but its worktree is gone, re-add
+one at the same sibling path (§2 step 4) — `git worktree add "$WT" issue-<issue>` (no `-b`; the
+branch already exists). Run everything below, and §4, inside it.
+
+Then rebuild from git:
 
 1. Parse the tasks (id + text + box) from the PR body (a `😺 Michi` issue comment in local-only mode).
 2. A task is **done iff a commit carries its id** as a trailer. Get all done ids in one call —
