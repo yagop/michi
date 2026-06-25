@@ -6,15 +6,16 @@ A Claude Code plugin for **GitHub-issue-driven development**. You write an issue
 
 Invoke `/issue <number>` and the plugin will:
 
-1. **Read state** — find the work (existing draft PR → `🐱 Michi` issue comment → fresh) and detect fresh start vs. resume. The issue *body* is never touched.
-2. **Plan** (fresh start) — decompose the issue into small, independently committable tasks, each with a stable id, and post the checklist as a `🐱 Michi` issue comment.
-3. **Implement** — one task at a time: commit (tagged `T<n>: … (#<issue>)` with `Michi-Task` trailers) → **push** the `issue-<n>` branch → tick the task.
-4. **Track in a draft PR** — after the first push, open a draft PR (`Closes #<issue>`) and move the plan into its body; from then on the PR is the live home for plan + progress, mirrored into Claude Code's TodoWrite.
-5. **Wrap up** — mark the PR **ready for review** and post a summary. It does **not** merge, force-push, or close the issue.
+1. **Read state** — find the work (existing draft PR for the `issue-<n>` branch → fresh) and detect fresh start vs. resume. The issue *body* is never touched.
+2. **Plan & open a draft PR** (fresh start) — decompose the issue into small, independently committable tasks (each with a stable id), open a draft PR up front (`Closes #<issue>`) with the checklist in its body, and drop a one-line pointer comment on the issue: `😺 Michi — started work in <PR> 🐾`.
+3. **Implement** — one task at a time: commit (tagged `T<n>: … (#<issue>)` with `Michi-Task` trailers) → **push** the `issue-<n>` branch → tick the task in the PR body. Progress is mirrored into Claude Code's TodoWrite.
+4. **Wrap up** — mark the PR **ready for review** and post a summary. It does **not** merge, force-push, or close the issue.
+
+The task list lives in **one place — the PR body** — so there's nothing to keep in sync between the issue and the PR.
 
 ### Resumable by design
 
-The task list lives in a marker block — in the draft PR body once it exists, or the `🐱 Michi` issue comment before then:
+The task list lives in a marker block in the **draft PR body**:
 
 ```
 <!-- michi:plan -->

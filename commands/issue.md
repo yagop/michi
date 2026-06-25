@@ -36,8 +36,9 @@ completion one small task at a time, tracking the work in a **draft PR**. Runs a
 Don't keep two checklists in sync — that races and drifts. **One ground truth per fact,
 everything else derived:**
 
-- **Plan** (task list + text) → ground truth is the **PR body** marker block (before the PR
-  exists, it lives in a `🐱 Michi` issue comment). The issue *body* is never touched.
+- **Plan** (task list + text) → ground truth is the **PR body** marker block, and *only* there.
+  The PR is opened up front (via an empty bootstrap commit), so the task list never lives in two
+  places. The issue gets a one-line pointer comment; its body is never touched.
 - **Progress** (what's done) → ground truth is the **git log**: a task is done iff a commit
   carrying its id exists. A checkbox is only a *cache* of that.
 - **TodoWrite** → a throwaway projection, rebuilt each run from `plan ⋈ git log`.
@@ -90,18 +91,19 @@ Parse them as whitespace-separated tokens:
 
 1. `gh auth status` — if not authenticated, tell the user to run `gh auth login` and stop.
 2. Confirm you're inside a git repo (see Live context). If not, stop and say so.
-3. Note whether a remote exists. **No remote → local-only mode**: skip every push and the PR;
-   keep the plan in the `🐱 Michi` issue comment and tick its checkbox there. Everything else
-   below is unchanged.
+3. Note whether a remote exists. **No remote → local-only mode** (the exception): a PR isn't
+   possible, so keep the plan's marker block in a `😺 Michi` issue comment and tick it there.
+   Skip every push and PR step below; everything else is unchanged.
 
 ## 1. Read state & locate the plan
 
-1. Fetch the issue: `gh issue view <issue> $REPO --json number,title,body,labels,state`.
+1. Fetch the issue (for its title): `gh issue view <issue> $REPO --json number,title,body,state`.
 2. Find the work, in order:
-   - **PR**: `gh pr list $REPO --head issue-<issue> --state all --json number,body,isDraft,state`.
+   - **PR** (the normal home): `gh pr list $REPO --head issue-<issue> --state all --json number,body,isDraft,state`.
      If one exists → the plan lives in its body. This is a **resume**; go to §3.
-   - Else **issue comment**: look for a comment starting `🐱 Michi` containing a
-     `<!-- michi:plan -->` block → **resume** from there; go to §3.
+   - Else if the **branch** `issue-<issue>` exists with commits but no PR (an interrupted
+     bootstrap) → **resume**; go to §3 (it will open the PR).
+   - Else (local-only mode) a `😺 Michi` issue comment may hold the plan → **resume** from there.
    - Else → **fresh start**; go to §2.
 
 The marker block looks like:
@@ -124,31 +126,42 @@ Each line's `<!--m:…-->` is its **stable id** — the key everything matches o
    assigned once and never changed.
 4. Create the working branch if needed: if you're on the default branch, `git switch -c issue-<issue>`
    (otherwise reuse the current non-default branch).
-5. **Announce**: post one issue comment (this is your initial durable plan — do **not** edit the
-   issue body):
+5. **Open the draft PR up front** (so the plan has a durable home from the start, and the issue
+   can point at it). GitHub needs a commit to open a PR, so bootstrap with an empty one:
    ```
-   🐱 Michi — started work.
+   git commit --allow-empty -m "michi: start #<issue>"
+   git push -u origin issue-<issue>
+   gh pr create $REPO --draft --base <default-branch> --head issue-<issue> \
+     --title "<issue title> (#<issue>)" --body-file -
+   ```
+   The PR body is `Closes #<issue>` then the full `<!-- michi:plan -->` block (all unchecked):
+   ```
+   Closes #<issue>
 
    <!-- michi:plan -->
    - [ ] T1 <!--m:<id>--> <task>
    - [ ] T2 <!--m:<id>--> <task>
    <!-- /michi:plan -->
    ```
-   `gh issue comment <issue> $REPO --body-file -`.
-6. Mirror the tasks into TodoWrite. Proceed to §4.
-
-The PR is opened in §4 right after the first task is pushed (GitHub needs a commit to open a PR).
+   (Local-only mode: skip this; put the block in a `😺 Michi` issue comment instead.)
+6. **Point the issue at the PR** — post exactly one comment, and do **not** edit the issue body:
+   ```
+   😺 Michi — started work in <PR url> 🐾
+   ```
+   `gh issue comment <issue> $REPO --body "😺 Michi — started work in <PR url> 🐾"`.
+7. Mirror the tasks into TodoWrite. Proceed to §4.
 
 ## 3. Reconcile & resume
 
 The marker block is the plan; **git is the truth for what's done.** Rebuild from git:
 
-1. Parse the tasks (id + text + box) from the current plan home (PR body, else issue comment).
+1. Parse the tasks (id + text + box) from the PR body (a `😺 Michi` issue comment in local-only mode).
 2. A task is **done iff a commit carries its id**: `git log --grep "^Michi-Task: <id>"` returns
    a commit. The checkbox is not evidence — it's a cache about to be refreshed.
 3. If a box disagrees with git, **git wins**; note the correction.
-4. If commits exist and are pushed but **no PR exists yet**, open it now (§4 step 6).
-5. Rebuild TodoWrite, refresh the plan home so every box matches git (§4 step 7), then resume at
+4. If the branch has commits but **no PR exists yet** (interrupted bootstrap), open the PR now
+   from the recovered plan and post the issue pointer comment (§2 steps 5–6).
+5. Rebuild TodoWrite, refresh the PR body so every box matches git (§4 step 6), then resume at
    the **first not-done** task. Proceed to §4.
 
 ## 4. Implement (loop, one task at a time)
@@ -166,20 +179,11 @@ For each not-done task `T<n>`, in order:
    git commit -m "T<n>: <task summary> (#<issue>)" -m "Michi-Task: <id>
    Michi-Issue: <issue>"
    ```
-5. **Push** the issue branch (skip in local-only mode). First push sets upstream:
-   `git push -u origin issue-<issue>` (thereafter `git push`). **Never** `--force`; **never** the
-   default branch. If the push is **rejected** (non-fast-forward → the branch diverged remotely),
-   **stop and report** — do not force past it.
-6. **Ensure the draft PR exists.** If there's no PR yet and the branch now has a pushed commit:
-   ```
-   gh pr create $REPO --draft --base <default-branch> --head issue-<issue> \
-     --title "<issue title> (#<issue>)" --body-file -
-   ```
-   The body is `Closes #<issue>` followed by the `<!-- michi:plan -->` block. Once the PR exists,
-   it is the plan's home; stop updating the issue comment.
-7. **Sync (idempotent, marker-block only).** Re-render the plan and write it back:
-   1. Re-fetch the current body — `gh pr view <PR> $REPO --json body -q .body` (or the issue
-      comment in local-only mode).
+5. **Push** the issue branch: `git push` (skip in local-only mode; upstream was set in §2).
+   **Never** `--force`; **never** the default branch. If the push is **rejected** (non-fast-forward
+   → the branch diverged remotely), **stop and report** — do not force past it.
+6. **Sync the PR body (idempotent, marker-block only).** The draft PR already exists (§2):
+   1. Re-fetch the current body — `gh pr view <PR> $REPO --json body -q .body`.
    2. Replace **only** the text between `<!-- michi:plan -->` and `<!-- /michi:plan -->`, each box
       `[x]` iff a commit carries that task's id (§3 step 2). Leave everything else byte-for-byte.
    3. Write it back with the REST API — **not** `gh pr edit`, which fails on repos with classic
@@ -189,10 +193,10 @@ For each not-done task `T<n>`, in order:
       ```
       gh api repos/<owner>/<repo>/pulls/<PR> -X PATCH -F body=@<file>
       ```
-      In local-only mode, edit the `🐱 Michi` issue comment instead (`gh issue comment … --edit-last`).
+      (Local-only mode: edit the `😺 Michi` issue comment instead, via `gh issue comment … --edit-last`.)
    4. Mark the task `completed` in TodoWrite. If the write fails, continue — the next run
       re-derives from git and re-syncs.
-8. Next not-done task.
+7. Next not-done task.
 
 If a task turns out wrong-sized or blocked, adjust/split the checklist inside the marker block
 (keep ids stable for unchanged tasks), explain why, and continue.
