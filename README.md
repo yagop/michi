@@ -1,21 +1,19 @@
-# michi
+# michi 😺
 
-A Claude Code plugin for **GitHub-issue-driven development**. You write an issue; Claude reads it, plans the work, implements it task by task in a **draft PR**, and keeps everything in sync as it goes — pushing the branch and ticking the plan after each task. Runs are **resumable** — stop anytime and pick up where you left off.
+A Claude Code plugin for **GitHub-issue-driven development**. Write an issue, run `/issue <number>`, and michi plans the work, implements it task by task in a **draft PR**, and keeps everything in sync as it goes. Stop anytime — runs are **resumable**. 🐾
 
-## What it does
+## What it does ✨
 
-Invoke `/issue <number>` and the plugin will:
+`/issue <number>` runs four steps:
 
-1. **Read state** — find the work (existing draft PR for the `issue-<n>` branch → fresh) and detect fresh start vs. resume. The issue *body* is never touched.
-2. **Plan & open a draft PR** (fresh start) — decompose the issue into small, independently committable tasks (each with a stable id), open a draft PR up front (`Closes #<issue>`) with the checklist in its body, and drop a one-line pointer comment on the issue: `😺 Michi — started work in <PR> 🐾`.
-3. **Implement** — one task at a time, looping **execute → verify → correct** until it's green (it won't commit broken code): then commit (tagged `T<n>: … (#<issue>)` with `Michi-Task` trailers) → **push** the `issue-<n>` branch → tick the task in the PR body. Progress is mirrored into Claude Code's TodoWrite.
-4. **Wrap up** — **wait for CI** and push bounded fix commits until it's green (if it can't fix it after a few honest attempts, or the failure is flaky/unrelated, it stops and leaves the PR draft for you), then mark the PR **ready for review** and post a summary. It does **not** merge, force-push, or close the issue.
+1. **📖 Read state** — find any existing draft PR for the `issue-<n>` branch and decide: fresh start or resume. Your issue body is never touched.
+2. **📝 Plan** — break the issue into small, independently committable tasks, open a draft PR (`Closes #<issue>`) with the checklist in its body, and drop a pointer comment on the issue.
+3. **🛠️ Implement** — one task at a time, looping **execute → verify → correct** until green (never commits broken code), then commit → **push** the `issue-<n>` branch → tick the task.
+4. **🚦 Wrap up** — wait for CI, push bounded fix commits until it's green, then mark the PR **ready for review**. It never merges, force-pushes, or closes the issue.
 
-The task list lives in **one place — the PR body** — so there's nothing to keep in sync between the issue and the PR.
+## Resumable by design 🔁
 
-### Resumable by design
-
-The task list lives in a marker block in the **draft PR body**:
+The task list lives in **one place** — a marker block in the draft PR body — so there's nothing to keep in sync:
 
 ```
 <!-- michi:plan -->
@@ -24,53 +22,43 @@ The task list lives in a marker block in the **draft PR body**:
 <!-- /michi:plan -->
 ```
 
-**Git is the source of truth for what's done** — a task is complete iff a commit carries its id (`Michi-Task: <id>` trailer). The checkboxes are just a cache of that. On a new run the plugin re-derives done-ness from the commit log, refreshes the checkboxes to match, and resumes at the first not-done task. Nothing is re-done, and a failed sync self-heals on the next run.
+**Git is the source of truth for what's done** — a task is complete iff a commit carries its id (`Michi-Task: <id>` trailer); the checkboxes are just a cache. On each run michi re-derives done-ness from the commit log, refreshes the checkboxes, and resumes at the first unfinished task. Nothing is redone, and a failed sync self-heals next run.
 
-## Requirements
+## Requirements 📋
 
 - [`gh`](https://cli.github.com/) installed and authenticated (`gh auth status`).
-- `git` **≥ 2.34** (for native `--trailer` and `%(trailers:…)` parsing), run from inside the target repository.
+- `git` **≥ 2.34**, run from inside the target repo.
 
-## Install
+## Install 📦
 
-From within Claude Code:
+In Claude Code:
 
 ```
 /plugin marketplace add yagop/michi
 /plugin install michi@michi
 ```
 
-Or, to try it from a local clone:
+(Swap `yagop/michi` for a local path to try a clone.)
 
-```
-/plugin marketplace add /absolute/path/to/michi
-/plugin install michi@michi
-```
-
-## Usage
+## Usage 🚀
 
 ```
 /issue 123                 # work issue #123 in the current repo
 /issue 123 owner/repo      # target a specific repo
 ```
 
-Run it again on the same issue at any time to resume.
+Run it again on the same issue anytime to resume.
 
-## Agent Skill
+## Agent Skill 🧩
 
-michi is a Claude Code **plugin**, and its `/issue` workflow runs through Claude Code's
-[Agent Skills](https://code.claude.com/docs/en/skills) system — Claude Code unifies slash
-commands and skills, so once installed michi is surfaced as the **`michi:issue`** skill and
-invoked as `/issue <number>`. It's a deliberately **user-invoked** workflow: you run it on a
-specific issue. That's the right shape for a side-effecting command (it pushes branches and
-opens PRs) — you don't want it auto-firing.
+michi runs through Claude Code's [Agent Skills](https://code.claude.com/docs/en/skills) system, so once installed it's surfaced as the **`michi:issue`** skill and invoked as `/issue <number>`. It's deliberately **user-invoked** — a side-effecting command (it pushes branches and opens PRs) shouldn't auto-fire.
 
-## Safety
+## Safety 🔒
 
-The command is scoped via `allowed-tools` to specific `gh`/`git` subcommands. Within that scope it **will** push its own `issue-<n>` branch, open/maintain a **draft** PR, wait for CI and push bounded fix commits to make it pass, and mark that PR ready when every task is done and CI is green. It will **never** merge, force-push, push your default branch, or close the issue — those stay yours. (The issue closes automatically when *you* merge the PR, via `Closes #<issue>`.) Work is one commit per task on a dedicated branch, so it's easy to inspect, and the draft PR is easy to close if you don't want it.
+The command is scoped via `allowed-tools` to specific `gh`/`git` subcommands, works on a dedicated `issue-<n>` branch, and makes one commit per task — easy to inspect. It will **never** merge, force-push, push your default branch, or close the issue; those stay yours. (The issue closes when *you* merge the PR, via `Closes #<issue>`.)
 
-> **Note:** this is a behavior change from earlier versions, which kept everything local and never pushed. michi now pushes to a non-default branch and opens a draft PR automatically.
+> **Note:** earlier versions stayed local and never pushed; michi now pushes to a non-default branch and opens a draft PR automatically.
 
-## License
+## License 📄
 
 MIT — see [LICENSE](LICENSE).
