@@ -19,6 +19,7 @@ allowed-tools: >-
   Bash(git branch:*),
   Bash(git checkout:*),
   Bash(git switch:*),
+  Bash(git worktree:*),
   Bash(git diff:*),
   Bash(git rev-parse:*),
   Bash(git remote:*),
@@ -69,12 +70,15 @@ Parse them as whitespace-separated tokens:
 - Default branch: !`gh repo view --json defaultBranchRef -q .defaultBranchRef.name 2>/dev/null || echo "(unknown)"`
 - Has remote: !`git remote 2>/dev/null | head -1 || echo "(none)"`
 - Working tree: !`git status --short 2>/dev/null | head -30`
+- Worktrees: !`git worktree list 2>/dev/null | head -30`
 
 ## Safety — what michi may and won't do
 
-- **May**: create the `issue-<issue>` branch, commit, **push that branch** (fast-forward only),
-  open and maintain a **draft PR**, **wait for CI and push bounded fix commits** to make it pass,
-  and **mark the PR ready for review** once every task is done and CI is green.
+- **May**: create the `issue-<issue>` branch **in a dedicated git worktree** (so your current
+  checkout — branch, staged changes, untracked files — is never touched), commit, **push that
+  branch** (fast-forward only), open and maintain a **draft PR**, **wait for CI and push bounded
+  fix commits** to make it pass, and **mark the PR ready for review** once every task is done and
+  CI is green.
 - **Never** (needs your explicit action): `--force`/force-push, push the **default branch**,
   **merge** the PR, or **close** the issue. The issue closes automatically via `Closes #<issue>`
   when *you* merge — michi never closes it.
@@ -123,8 +127,16 @@ Each line's `<!--m:…-->` is its **stable id** — the key everything matches o
    verifiable on its own. Prefer 3–8; split only where it earns its keep.
 3. Give each task a **stable id**: a short unique token (4–6 lowercase alphanumeric chars),
    assigned once and never changed.
-4. Create the working branch if needed: if you're on the default branch, `git switch -c issue-<issue>`
-   (otherwise reuse the current non-default branch).
+4. **Set up an isolated worktree** for the issue, so your current checkout is never disturbed —
+   no branch switch, no stash. Pick a path *outside* the repo (a sibling of the repo root), then
+   create the `issue-<issue>` branch and its worktree off the **default branch** in one step:
+   ```
+   ROOT="$(git rev-parse --show-toplevel)"; WT="$(dirname "$ROOT")/$(basename "$ROOT")-issue-<issue>"
+   git worktree add "$WT" -b issue-<issue> <default-branch>
+   cd "$WT"
+   ```
+   From here on run **every** git command, file read, write, and commit inside `$WT`. (Local-only
+   mode still creates the worktree — only push/PR are skipped.)
 5. **Open the draft PR up front** (so the plan has a durable home from the start, and the issue
    can point at it). GitHub needs a commit to open a PR, so bootstrap with an empty one:
    ```
@@ -152,7 +164,14 @@ Each line's `<!--m:…-->` is its **stable id** — the key everything matches o
 
 ## 3. Reconcile & resume
 
-The marker block is the plan; **git is the truth for what's done.** Rebuild from git:
+The marker block is the plan; **git is the truth for what's done.**
+
+**First, re-enter the worktree.** A prior run created an `issue-<issue>` worktree; find it with
+`git worktree list` and `cd` into its path. If the branch exists but its worktree is gone, re-add
+one at the same sibling path (§2 step 4) — `git worktree add "$WT" issue-<issue>` (no `-b`; the
+branch already exists). Run everything below, and §4, inside it.
+
+Then rebuild from git:
 
 1. Parse the tasks (id + text + box) from the PR body (a `😺 Michi` issue comment in local-only mode).
 2. A task is **done iff a commit carries its id** as a trailer. Get all done ids in one call —
@@ -234,3 +253,6 @@ When every task is locally green, committed, and pushed, gate the PR on CI befor
 5. Post a short summary PR comment: tasks done + commits, and final CI status. Stop. The PR is **ready
    but not merged** — you have not merged it, force-pushed, or closed the issue. Merging it (the PR says
    `Closes #<issue>`) is theirs to do, and that closes the issue.
+
+**Leave the worktree in place** — it keeps runs resumable. Removing it (`git worktree remove <path>`,
+then deleting the branch) stays the user's, like merging; michi never tears it down.

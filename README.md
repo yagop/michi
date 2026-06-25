@@ -7,7 +7,7 @@ A Claude Code plugin for **GitHub-issue-driven development**. Write an issue, ru
 `/issue <number>` runs four steps:
 
 1. **📖 Read state** — find any existing draft PR for the `issue-<n>` branch and decide: fresh start or resume. Your issue body is never touched.
-2. **📝 Plan** — break the issue into small, independently committable tasks, open a draft PR (`Closes #<issue>`) with the checklist in its body, and drop a pointer comment on the issue.
+2. **📝 Plan** — break the issue into small, independently committable tasks, set up an isolated **git worktree** for the `issue-<n>` branch (your current checkout is never touched), open a draft PR (`Closes #<issue>`) with the checklist in its body, and drop a pointer comment on the issue.
 3. **🛠️ Implement** — one task at a time, looping **execute → verify → correct** until green (never commits broken code), then commit → **push** the `issue-<n>` branch → tick the task.
 4. **🚦 Wrap up** — wait for CI, push bounded fix commits until it's green, then mark the PR **ready for review**. It never merges, force-pushes, or closes the issue.
 
@@ -55,7 +55,7 @@ michi runs through Claude Code's [Agent Skills](https://code.claude.com/docs/en/
 
 ## Safety 🔒
 
-The command is scoped via `allowed-tools` to specific `gh`/`git` subcommands, works on a dedicated `issue-<n>` branch, and makes one commit per task — easy to inspect. It will **never** merge, force-push, push your default branch, or close the issue; those stay yours. (The issue closes when *you* merge the PR, via `Closes #<issue>`.)
+The command is scoped via `allowed-tools` to specific `gh`/`git` subcommands, works in a dedicated `issue-<n>` **git worktree** (your current checkout — branch, staged changes, untracked files — is never touched; no branch switch, no stash), and makes one commit per task — easy to inspect. It will **never** merge, force-push, push your default branch, or close the issue; those stay yours. (The issue closes when *you* merge the PR, via `Closes #<issue>`.) The worktree stays in place for resumability; removing it (`git worktree remove`) is yours, like merging.
 
 > **Note:** earlier versions stayed local and never pushed; michi now pushes to a non-default branch and opens a draft PR automatically.
 
