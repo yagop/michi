@@ -1,15 +1,15 @@
-# michi
+# michi 😺
 
-A Claude Code plugin for **GitHub-issue-driven development**. You write an issue; Claude reads it, plans the work, implements it task by task in a **draft PR**, and keeps everything in sync as it goes — pushing the branch and ticking the plan after each task. Runs are **resumable** — stop anytime and pick up where you left off.
+A Claude Code plugin for **GitHub-issue-driven development**. Write an issue, run `/issue <number>`, and michi plans the work, implements it task by task in a **draft PR**, and keeps everything in sync as it goes. Stop anytime — runs are **resumable**. 🐾
 
-## What it does
+## What it does ✨
 
-Invoke `/issue <number>` and the plugin will:
+`/issue <number>` runs four steps:
 
-1. **Read state** — find the work (existing draft PR for the `issue-<n>` branch → fresh) and detect fresh start vs. resume. The issue *body* is never touched.
-2. **Plan & open a draft PR** (fresh start) — decompose the issue into small, independently committable tasks (each with a stable id), open a draft PR up front (`Closes #<issue>`) with the checklist in its body, and drop a one-line pointer comment on the issue: `😺 Michi — started work in <PR> 🐾`.
-3. **Implement** — one task at a time, looping **execute → verify → correct** until it's green (it won't commit broken code): then commit (tagged `T<n>: … (#<issue>)` with `Michi-Task` trailers) → **push** the `issue-<n>` branch → tick the task in the PR body. Progress is mirrored into Claude Code's TodoWrite.
-4. **Wrap up** — **wait for CI** and push bounded fix commits until it's green (if it can't fix it after a few honest attempts, or the failure is flaky/unrelated, it stops and leaves the PR draft for you), then mark the PR **ready for review** and post a summary. It does **not** merge, force-push, or close the issue.
+1. **📖 Read state** — find any existing draft PR for the `issue-<n>` branch and decide: fresh start or resume. Your issue body is never touched.
+2. **📝 Plan** — break the issue into small, independently committable tasks, open a draft PR (`Closes #<issue>`) with the checklist in its body, and drop a pointer comment on the issue.
+3. **🛠️ Implement** — one task at a time, looping **execute → verify → correct** until green (never commits broken code), then commit → **push** the `issue-<n>` branch → tick the task.
+4. **🚦 Wrap up** — wait for CI, push bounded fix commits until it's green, then mark the PR **ready for review**. It never merges, force-pushes, or closes the issue.
 
 The task list lives in **one place — the PR body** — so there's nothing to keep in sync between the issue and the PR.
 
