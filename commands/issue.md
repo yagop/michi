@@ -163,7 +163,7 @@ The marker block is the plan; **git is the truth for what's done.** Rebuild from
 3. If a box disagrees with git, **git wins**; note the correction.
 4. If the branch has commits but **no PR exists yet** (interrupted bootstrap), open the PR now
    from the recovered plan and post the issue pointer comment (§2 steps 5–6).
-5. Rebuild TodoWrite, refresh the PR body so every box matches git (§4 step 6), then resume at
+5. Rebuild TodoWrite, refresh the PR body so every box matches git (§4 step 5), then resume at
    the **first not-done** task. Proceed to §4.
 
 ## 4. Implement (loop, one task at a time)
@@ -171,19 +171,26 @@ The marker block is the plan; **git is the truth for what's done.** Rebuild from
 For each not-done task `T<n>`, in order:
 
 1. Mark it `in_progress` in TodoWrite.
-2. Implement exactly that task. Read the files you need; make the change.
-3. **Verify**: run the project's test/build/lint for the touched area if one exists, else
-   sanity-check. Don't move on if it's broken. Let the repo's own hooks run — **never** `--no-verify`.
-4. Commit just this task's changes, adding the trailers natively:
+2. **Execute → verify → correct** (loop until green, *then* commit):
+   - **Execute**: implement exactly that task. Read the files you need; make the change.
+   - **Verify**: run the project's test/build/lint for the touched area if one exists, else
+     sanity-check. Let the repo's own hooks run — **never** `--no-verify`.
+   - **Correct**: if verify fails, read the output, fix the actual cause, and verify again.
+     Repeat — but **bounded** (≈3 corrections). Each fix must be informed by the failure, not a
+     blind retry; if attempts stop making progress, bail early.
+   - **Don't commit broken code.** If it's still failing after the bound, or the failure is
+     **pre-existing / unrelated** to this task, **stop and report** the task as blocked (adjust or
+     split the plan, explain why) rather than committing or forcing past it.
+3. Once verify is green, commit just this task's changes, adding the trailers natively:
    ```
    git add <the files for this task>
    git commit -m "T<n>: <task summary> (#<issue>)" \
      --trailer "Michi-Task: <id>" --trailer "Michi-Issue: <issue>"
    ```
-5. **Push** the issue branch: `git push` (skip in local-only mode; upstream was set in §2).
+4. **Push** the issue branch: `git push` (skip in local-only mode; upstream was set in §2).
    **Never** `--force`; **never** the default branch. If the push is **rejected** (non-fast-forward
    → the branch diverged remotely), **stop and report** — do not force past it.
-6. **Sync the PR body (idempotent, marker-block only).** The draft PR already exists (§2):
+5. **Sync the PR body (idempotent, marker-block only).** The draft PR already exists (§2):
    1. Re-fetch the current body — `gh pr view <PR> $REPO --json body -q .body`.
    2. Replace **only** the text between `<!-- michi:plan -->` and `<!-- /michi:plan -->`, each box
       `[x]` iff a commit carries that task's id (§3 step 2). Leave everything else byte-for-byte.
@@ -197,7 +204,7 @@ For each not-done task `T<n>`, in order:
       (Local-only mode: edit the `😺 Michi` issue comment instead, via `gh issue comment … --edit-last`.)
    4. Mark the task `completed` in TodoWrite. If the write fails, continue — the next run
       re-derives from git and re-syncs.
-7. Next not-done task.
+6. Next not-done task.
 
 If a task turns out wrong-sized or blocked, adjust/split the checklist inside the marker block
 (keep ids stable for unchanged tasks), explain why, and continue.
