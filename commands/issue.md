@@ -11,6 +11,7 @@ allowed-tools: >-
   Bash(gh pr list:*),
   Bash(gh pr ready:*),
   Bash(gh pr checks:*),
+  Bash(gh pr comment:*),
   Bash(gh run list:*),
   Bash(gh run view:*),
   Bash(gh api:*),
@@ -30,7 +31,8 @@ allowed-tools: >-
 ---
 
 You are running **michi**: GitHub-issue-driven development. Drive the target issue to
-completion one small task at a time, tracking the work in a **draft PR**. Runs are
+completion one small task at a time, tracking the work in a **draft PR**, and **watch that PR
+through to merge** — turning review comments and CI into work along the way. Runs are
 **resumable** — state lives in git and on GitHub, so you can be stopped and re-invoked anytime.
 
 ## Sync model (read this first)
@@ -77,8 +79,9 @@ Parse them as whitespace-separated tokens:
 - **May**: create the `issue-<issue>` branch **in a dedicated git worktree** (so your current
   checkout — branch, staged changes, untracked files — is never touched), commit, **push that
   branch** (fast-forward only), open and maintain a **draft PR**, **wait for CI and push bounded
-  fix commits** to make it pass, and **mark the PR ready for review** once every task is done and
-  CI is green.
+  fix commits** to make it pass, **mark the PR ready for review** once every task is done and
+  CI is green, and then **watch the PR until *you* merge it** — turning new review comments and CI
+  failures into tasks, and replying to reviewers (never resolving their threads).
 - **Never** (needs your explicit action): `--force`/force-push, push the **default branch**,
   **merge** the PR, or **close** the issue. The issue closes automatically via `Closes #<issue>`
   when *you* merge — michi never closes it.
@@ -185,7 +188,14 @@ Then rebuild from git:
 4. If the branch has commits but **no PR exists yet** (interrupted bootstrap), open the PR now
    from the recovered plan and post the issue pointer comment (§2 steps 5–6).
 5. Rebuild TodoWrite, refresh the PR body so every box matches git (§4 step 5), then resume at
-   the **first not-done** task. Proceed to §4.
+   the **first not-done** task (§4).
+6. **If every task is already done, the run isn't over — route by PR state:**
+   - PR **merged** → **done** (§6 step 1): post the merged comment once, then stop.
+   - PR open but **still draft** → finish §5 (re-gate CI, mark ready); skip the summary comment if
+     you already posted one.
+   - PR open and **ready** → go straight to **§6** and watch.
+   §6a re-derives unaddressed review feedback from git (`Michi-Review` trailers), so comments that
+   arrived between runs get picked up — and may add fresh tasks, looping back through §4.
 
 ## 4. Implement (loop, one task at a time)
 
@@ -230,7 +240,7 @@ For each not-done task `T<n>`, in order:
 If a task turns out wrong-sized or blocked, adjust/split the checklist inside the marker block
 (keep ids stable for unchanged tasks), explain why, and continue.
 
-## 5. Wrap up — gate on CI, then ready
+## 5. Gate on CI, then mark ready
 
 When every task is locally green, committed, and pushed, gate the PR on CI before marking it ready.
 (Local-only mode has no PR/CI — skip to the final summary.)
@@ -250,9 +260,50 @@ When every task is locally green, committed, and pushed, gate the PR on CI befor
      it), **stop**: leave the PR **draft**, comment with the failing checks and what you tried, and hand
      off. Never mark ready with red CI.
 4. **Mark the PR ready for review**: `gh pr ready <PR> $REPO`.
-5. Post a short summary PR comment: tasks done + commits, and final CI status. Stop. The PR is **ready
-   but not merged** — you have not merged it, force-pushed, or closed the issue. Merging it (the PR says
-   `Closes #<issue>`) is theirs to do, and that closes the issue.
+5. Post a short summary PR comment: tasks done + commits, and final CI status. The PR is **ready
+   but not merged** — you have not merged it, force-pushed, or closed the issue. **Don't stop here:
+   go to §6** and watch the PR until *you* merge it (which closes the issue via `Closes #<issue>`).
+
+## 6. Watch until merged — respond to reviews & CI
+
+"Ready" isn't the end: michi watches the PR until *you* merge it, turning incoming feedback into
+work. Each invocation makes **one bounded pass** and is resumable — re-invoke to keep watching.
+
+1. **Merged?** `gh pr view <PR> $REPO --json state,mergedAt`. If `state` is `MERGED` → **done**:
+   the issue auto-closed via `Closes #<issue>`. Post a final `😺 Michi — merged, all done 🐾`
+   comment (once) and stop.
+2. **CI red?** A new push or re-run can turn CI red after "ready". Re-gate it via §5 steps 1–3
+   (bounded `fix:` commits); if it can't be made green, leave it and report.
+3. **New review feedback?** Address any new, unresolved review comments per **§6a** — add a task
+   if a code change is needed, implement and push it, then reply. Never auto-resolve threads or
+   dismiss reviews.
+4. **Nothing actionable, not merged?** Report that michi is **waiting for your merge** (with the
+   PR url) and stop — a later run resumes the watch. Don't busy-loop or poll CI indefinitely.
+
+michi **never** merges the PR itself — waiting, fixing, and replying only. Merging stays yours.
+
+### 6a. Review response
+
+A comment is **"new"** if michi hasn't answered it yet — and, like done-ness, that's derived from
+**git, not memory.** A comment is addressed iff its id appears in
+`git log <default-branch>..HEAD --format='%(trailers:key=Michi-Review,valueonly)'`.
+
+1. **Collect open feedback** — inline review threads and review-level bodies:
+   ```
+   gh api repos/<owner>/<repo>/pulls/<PR>/comments --jq '.[] | {id, path, line, body, user: .user.login}'
+   gh pr view <PR> $REPO --json reviews -q '.reviews[] | {state, body, author: .author.login}'
+   ```
+   Skip michi's own comments, and any whose id is already in the `Michi-Review` set above.
+2. **Triage each** — actionable code change, a question, or noise:
+   - **Actionable** → add a task to the marker block (new stable id, §2 step 3) and implement it via
+     §4, but add a **`Michi-Review: <comment-id>`** trailer *alongside* the usual `Michi-Task`/
+     `Michi-Issue`. `Michi-Task` still drives done-ness; `Michi-Review` records which comment the
+     commit answers, so it isn't re-addressed next run.
+   - **Question / no change needed** → reply only; no commit.
+3. **Reply with the outcome** (what changed + the commit, or why not) — a PR-level note with
+   `gh pr comment <PR> $REPO --body "…"`, or an inline reply via
+   `gh api repos/<owner>/<repo>/pulls/<PR>/comments/<comment-id>/replies -f body="…"`.
+4. **Never auto-resolve** the thread or dismiss the review — resolving is the reviewer's.
 
 **Leave the worktree in place** — it keeps runs resumable. Removing it (`git worktree remove <path>`,
 then deleting the branch) stays the user's, like merging; michi never tears it down.
