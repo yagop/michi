@@ -251,9 +251,27 @@ When every task is locally green, committed, and pushed, gate the PR on CI befor
      it), **stop**: leave the PR **draft**, comment with the failing checks and what you tried, and hand
      off. Never mark ready with red CI.
 4. **Mark the PR ready for review**: `gh pr ready <PR> $REPO`.
-5. Post a short summary PR comment: tasks done + commits, and final CI status. Stop. The PR is **ready
-   but not merged** — you have not merged it, force-pushed, or closed the issue. Merging it (the PR says
-   `Closes #<issue>`) is theirs to do, and that closes the issue.
+5. Post a short summary PR comment: tasks done + commits, and final CI status. The PR is **ready
+   but not merged** — you have not merged it, force-pushed, or closed the issue. **Don't stop here:
+   go to §6** and watch the PR until *you* merge it (which closes the issue via `Closes #<issue>`).
+
+## 6. Watch until merged — respond to reviews & CI
+
+"Ready" isn't the end: michi watches the PR until *you* merge it, turning incoming feedback into
+work. Each invocation makes **one bounded pass** and is resumable — re-invoke to keep watching.
+
+1. **Merged?** `gh pr view <PR> $REPO --json state,mergedAt`. If `state` is `MERGED` → **done**:
+   the issue auto-closed via `Closes #<issue>`. Post a final `😺 Michi — merged, all done 🐾`
+   comment (once) and stop.
+2. **CI red?** A new push or re-run can turn CI red after "ready". Re-gate it via §5 steps 1–3
+   (bounded `fix:` commits); if it can't be made green, leave it and report.
+3. **New review feedback?** Address any new, unresolved review comments — add a task if a code
+   change is needed (§4), implement and push it, then reply with the outcome. Never auto-resolve
+   threads or dismiss reviews.
+4. **Nothing actionable, not merged?** Report that michi is **waiting for your merge** (with the
+   PR url) and stop — a later run resumes the watch. Don't busy-loop or poll CI indefinitely.
+
+michi **never** merges the PR itself — waiting, fixing, and replying only. Merging stays yours.
 
 **Leave the worktree in place** — it keeps runs resumable. Removing it (`git worktree remove <path>`,
 then deleting the branch) stays the user's, like merging; michi never tears it down.
