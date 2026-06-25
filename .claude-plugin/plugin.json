@@ -1,6 +1,6 @@
 {
   "name": "michi",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "GitHub-issue-driven development for Claude Code — plan an issue, then implement it task by task in a draft PR, pushing and syncing as it goes.",
   "author": {
     "name": "yagop"
