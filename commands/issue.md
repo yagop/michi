@@ -125,8 +125,16 @@ Each line's `<!--m:…-->` is its **stable id** — the key everything matches o
    verifiable on its own. Prefer 3–8; split only where it earns its keep.
 3. Give each task a **stable id**: a short unique token (4–6 lowercase alphanumeric chars),
    assigned once and never changed.
-4. Create the working branch if needed: if you're on the default branch, `git switch -c issue-<issue>`
-   (otherwise reuse the current non-default branch).
+4. **Set up an isolated worktree** for the issue, so your current checkout is never disturbed —
+   no branch switch, no stash. Pick a path *outside* the repo (a sibling of the repo root), then
+   create the `issue-<issue>` branch and its worktree off the **default branch** in one step:
+   ```
+   ROOT="$(git rev-parse --show-toplevel)"; WT="$(dirname "$ROOT")/$(basename "$ROOT")-issue-<issue>"
+   git worktree add "$WT" -b issue-<issue> <default-branch>
+   cd "$WT"
+   ```
+   From here on run **every** git command, file read, write, and commit inside `$WT`. (Local-only
+   mode still creates the worktree — only push/PR are skipped.)
 5. **Open the draft PR up front** (so the plan has a durable home from the start, and the issue
    can point at it). GitHub needs a commit to open a PR, so bootstrap with an empty one:
    ```
