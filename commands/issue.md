@@ -11,8 +11,8 @@ allowed-tools: >-
   Bash(gh pr create:*),
   Bash(gh pr view:*),
   Bash(gh pr list:*),
-  Bash(gh pr edit:*),
   Bash(gh pr ready:*),
+  Bash(gh api:*),
   Bash(git status:*),
   Bash(git log:*),
   Bash(git branch:*),
@@ -182,8 +182,14 @@ For each not-done task `T<n>`, in order:
       comment in local-only mode).
    2. Replace **only** the text between `<!-- michi:plan -->` and `<!-- /michi:plan -->`, each box
       `[x]` iff a commit carries that task's id (§3 step 2). Leave everything else byte-for-byte.
-   3. Write it back: `gh pr edit <PR> $REPO --body-file -` (or `gh issue comment … --edit-last`
-      in local-only mode).
+   3. Write it back with the REST API — **not** `gh pr edit`, which fails on repos with classic
+      Projects (it pre-fetches `projectCards` via a deprecated GraphQL field, exits non-zero, and
+      doesn't update). Resolve the repo slug (`gh repo view $REPO --json nameWithOwner -q .nameWithOwner`)
+      and PATCH:
+      ```
+      gh api repos/<owner>/<repo>/pulls/<PR> -X PATCH -F body=@<file>
+      ```
+      In local-only mode, edit the `🐱 Michi` issue comment instead (`gh issue comment … --edit-last`).
    4. Mark the task `completed` in TodoWrite. If the write fails, continue — the next run
       re-derives from git and re-syncs.
 8. Next not-done task.
