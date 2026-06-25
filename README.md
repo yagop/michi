@@ -24,35 +24,30 @@ The task list lives in **one place** — a marker block in the draft PR body —
 
 **Git is the source of truth for what's done** — a task is complete iff a commit carries its id (`Michi-Task: <id>` trailer); the checkboxes are just a cache. On each run michi re-derives done-ness from the commit log, refreshes the checkboxes, and resumes at the first unfinished task. Nothing is redone, and a failed sync self-heals next run.
 
-## Requirements
+## Requirements 📋
 
 - [`gh`](https://cli.github.com/) installed and authenticated (`gh auth status`).
-- `git` **≥ 2.34** (for native `--trailer` and `%(trailers:…)` parsing), run from inside the target repository.
+- `git` **≥ 2.34**, run from inside the target repo.
 
-## Install
+## Install 📦
 
-From within Claude Code:
+In Claude Code:
 
 ```
 /plugin marketplace add yagop/michi
 /plugin install michi@michi
 ```
 
-Or, to try it from a local clone:
+(Swap `yagop/michi` for a local path to try a clone.)
 
-```
-/plugin marketplace add /absolute/path/to/michi
-/plugin install michi@michi
-```
-
-## Usage
+## Usage 🚀
 
 ```
 /issue 123                 # work issue #123 in the current repo
 /issue 123 owner/repo      # target a specific repo
 ```
 
-Run it again on the same issue at any time to resume.
+Run it again on the same issue anytime to resume.
 
 ## Agent Skill
 
