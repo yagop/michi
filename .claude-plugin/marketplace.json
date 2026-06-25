@@ -8,7 +8,7 @@
     {
       "name": "michi",
       "source": "./",
-      "description": "GitHub-issue-driven development — plan, implement, and sync an issue task by task. Resumable."
+      "description": "GitHub-issue-driven development — plan an issue, implement it task by task in a draft PR, push and sync as it goes. Resumable."
     }
   ]
 }
