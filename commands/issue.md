@@ -19,15 +19,20 @@ allowed-tools: >-
   Read, Edit, Write, Grep, Glob, TodoWrite
 ---
 
-You are running **michi**: GitHub-issue-driven development. Work issue **#$1** in this
-repository, driving it to completion one small task at a time. Runs are **resumable** —
-the issue body is the source of truth, so you can be stopped and re-invoked at any point.
+You are running **michi**: GitHub-issue-driven development. Drive the target issue to
+completion one small task at a time. Runs are **resumable** — the issue body is the source
+of truth, so you can be stopped and re-invoked at any point.
 
 ## Arguments
 
-- `$1` — the issue number (required). If empty, ask the user for it and stop.
-- `$2` — optional `owner/repo`. When present, pass `-R $2` to **every** `gh` call.
-  When absent, `gh` uses the current repo. Below, `$REPO` means "`-R $2` if given, else nothing".
+The invocation arguments are: `$ARGUMENTS`
+
+Parse them as whitespace-separated tokens:
+
+- The **first** token is the **issue number** (required). If `$ARGUMENTS` is empty, ask the
+  user for the issue number and stop. Below, `<issue>` means this number.
+- The **second** token, if present, is `owner/repo`. When given, pass `-R <owner/repo>` to
+  **every** `gh` call. Below, `$REPO` means "`-R <owner/repo>` if given, else nothing".
 
 ## Live context
 
@@ -38,7 +43,7 @@ the issue body is the source of truth, so you can be stopped and re-invoked at a
 
 - **Never** `git push`, force-push, open a PR, auto-merge, or close the issue. Stop and let
   the user do those explicitly. (The tool scope already forbids them — don't try to work around it.)
-- **One commit per task**, message format: `T<n>: <task summary> (#$1)`.
+- **One commit per task**, message format: `T<n>: <task summary> (#<issue>)`.
 - Make **only the change the current task requires**. Don't batch tasks into one commit.
 - The checklist in the issue body is the durable state. Keep it accurate after every task.
 
@@ -52,7 +57,7 @@ the issue body is the source of truth, so you can be stopped and re-invoked at a
 Fetch the issue:
 
 ```
-gh issue view $1 $REPO --json number,title,body,labels,state
+gh issue view <issue> $REPO --json number,title,body,labels,state
 ```
 
 Look in the body for the michi marker block:
@@ -86,12 +91,12 @@ Look in the body for the michi marker block:
    <!-- /michi:plan -->
    ```
 
-   Apply it with `gh issue edit $1 $REPO --body-file -` (pipe the full new body via stdin, or
+   Apply it with `gh issue edit <issue> $REPO --body-file -` (pipe the full new body via stdin, or
    write to a temp file and use `--body-file`). Do **not** lose existing body content.
 4. Ensure a working branch exists. If you're on the default branch, create one:
-   `git switch -c issue-$1` (skip if already on a suitable branch).
+   `git switch -c issue-<issue>` (skip if already on a suitable branch).
 5. Best-effort label: if `gh label list $REPO` shows an `in-progress` label, add it with
-   `gh issue edit $1 $REPO --add-label in-progress`. If it doesn't exist, continue silently —
+   `gh issue edit <issue> $REPO --add-label in-progress`. If it doesn't exist, continue silently —
    it's nice-to-have, not required.
 6. Mirror the task list into Claude Code's TodoWrite so the user sees live progress.
 
@@ -101,7 +106,7 @@ Then proceed to §4 (Implement).
 
 1. Parse the checked/unchecked state from the marker block.
 2. Cross-check against reality so you never redo finished work:
-   - `git log --oneline --grep "(#$1)"` — commits already made for this issue (look for `T<n>:`).
+   - `git log --oneline --grep "(#<issue>)"` — commits already made for this issue (look for `T<n>:`).
    - Treat a task as done if its checkbox is `[x]` **or** a matching `T<n>:` commit exists.
    - If they disagree (e.g. a commit exists but the box is unchecked), trust the git history,
      tick the box, and note the reconciliation.
@@ -119,10 +124,10 @@ For each unchecked task `T<n>`, in order:
 4. Commit just this task's changes:
    ```
    git add <the files for this task>
-   git commit -m "T<n>: <task summary> (#$1)"
+   git commit -m "T<n>: <task summary> (#<issue>)"
    ```
 5. **Sync**: flip the checkbox to `[x]` for `T<n>` inside the issue's marker block via
-   `gh issue edit $1 $REPO --body-file -` (re-read the current body first so you don't clobber
+   `gh issue edit <issue> $REPO --body-file -` (re-read the current body first so you don't clobber
    concurrent edits), and mark the task `completed` in TodoWrite.
 6. Move to the next unchecked task.
 
@@ -133,7 +138,7 @@ If a task turns out to be wrong-sized or blocked, update the plan in the issue b
 
 When every task is checked:
 
-1. Post a short summary comment on the issue: `gh issue comment $1 $REPO --body "<summary>"` —
+1. Post a short summary comment on the issue: `gh issue comment <issue> $REPO --body "<summary>"` —
    list the tasks done and the commits (`T<n>:` … ) made.
 2. Stop. Remind the user the commits are **local**; you have not pushed, opened a PR, or
    closed the issue, and will only do so on their explicit go-ahead.
