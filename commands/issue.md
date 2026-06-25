@@ -31,7 +31,8 @@ allowed-tools: >-
 ---
 
 You are running **michi**: GitHub-issue-driven development. Drive the target issue to
-completion one small task at a time, tracking the work in a **draft PR**. Runs are
+completion one small task at a time, tracking the work in a **draft PR**, and **watch that PR
+through to merge** — turning review comments and CI into work along the way. Runs are
 **resumable** — state lives in git and on GitHub, so you can be stopped and re-invoked anytime.
 
 ## Sync model (read this first)
@@ -78,8 +79,9 @@ Parse them as whitespace-separated tokens:
 - **May**: create the `issue-<issue>` branch **in a dedicated git worktree** (so your current
   checkout — branch, staged changes, untracked files — is never touched), commit, **push that
   branch** (fast-forward only), open and maintain a **draft PR**, **wait for CI and push bounded
-  fix commits** to make it pass, and **mark the PR ready for review** once every task is done and
-  CI is green.
+  fix commits** to make it pass, **mark the PR ready for review** once every task is done and
+  CI is green, and then **watch the PR until *you* merge it** — turning new review comments and CI
+  failures into tasks, and replying to reviewers (never resolving their threads).
 - **Never** (needs your explicit action): `--force`/force-push, push the **default branch**,
   **merge** the PR, or **close** the issue. The issue closes automatically via `Closes #<issue>`
   when *you* merge — michi never closes it.
@@ -238,7 +240,7 @@ For each not-done task `T<n>`, in order:
 If a task turns out wrong-sized or blocked, adjust/split the checklist inside the marker block
 (keep ids stable for unchanged tasks), explain why, and continue.
 
-## 5. Wrap up — gate on CI, then ready
+## 5. Gate on CI, then mark ready
 
 When every task is locally green, committed, and pushed, gate the PR on CI before marking it ready.
 (Local-only mode has no PR/CI — skip to the final summary.)
