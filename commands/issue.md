@@ -19,6 +19,7 @@ allowed-tools: >-
   Bash(git branch:*),
   Bash(git checkout:*),
   Bash(git switch:*),
+  Bash(git worktree:*),
   Bash(git diff:*),
   Bash(git rev-parse:*),
   Bash(git remote:*),
@@ -69,6 +70,7 @@ Parse them as whitespace-separated tokens:
 - Default branch: !`gh repo view --json defaultBranchRef -q .defaultBranchRef.name 2>/dev/null || echo "(unknown)"`
 - Has remote: !`git remote 2>/dev/null | head -1 || echo "(none)"`
 - Working tree: !`git status --short 2>/dev/null | head -30`
+- Worktrees: !`git worktree list 2>/dev/null | head -30`
 
 ## Safety — what michi may and won't do
 
