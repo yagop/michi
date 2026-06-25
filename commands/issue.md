@@ -79,12 +79,9 @@ Parse them as whitespace-separated tokens:
 - These guards are partly prompt-enforced (the tool scope can't express "non-force, non-default
   branch"), so treat them as hard rules: refuse to push if the current branch is the default
   branch, and never pass `--force`.
-- **One commit per task.** Subject `T<n>: <task summary> (#<issue>)`, then a trailer block
-  (last paragraph, consecutive lines, no blank line between):
-  ```
-  Michi-Task: <id>
-  Michi-Issue: <issue>
-  ```
+- **One commit per task.** Subject `T<n>: <task summary> (#<issue>)`, plus a `Michi-Task: <id>`
+  and `Michi-Issue: <issue>` trailer added natively with `git commit --trailer` (don't hand-format
+  the trailer paragraph). The id trailer is how done-ness is derived (§3).
 - Make **only the change the current task requires**. Don't batch tasks into one commit.
 
 ## 0. Preconditions
@@ -156,8 +153,13 @@ Each line's `<!--m:…-->` is its **stable id** — the key everything matches o
 The marker block is the plan; **git is the truth for what's done.** Rebuild from git:
 
 1. Parse the tasks (id + text + box) from the PR body (a `😺 Michi` issue comment in local-only mode).
-2. A task is **done iff a commit carries its id**: `git log --grep "^Michi-Task: <id>"` returns
-   a commit. The checkbox is not evidence — it's a cache about to be refreshed.
+2. A task is **done iff a commit carries its id** as a trailer. Get all done ids in one call —
+   exact, and immune to prose that merely mentions the token (unlike a `--grep` regex):
+   ```
+   git log <default-branch>..HEAD --format='%(trailers:key=Michi-Task,valueonly)'
+   ```
+   A task is done iff its id is in that set. The checkbox is not evidence — it's a cache about
+   to be refreshed.
 3. If a box disagrees with git, **git wins**; note the correction.
 4. If the branch has commits but **no PR exists yet** (interrupted bootstrap), open the PR now
    from the recovered plan and post the issue pointer comment (§2 steps 5–6).
@@ -171,13 +173,12 @@ For each not-done task `T<n>`, in order:
 1. Mark it `in_progress` in TodoWrite.
 2. Implement exactly that task. Read the files you need; make the change.
 3. **Verify**: run the project's test/build/lint for the touched area if one exists, else
-   sanity-check. Don't move on if it's broken.
-4. Commit just this task's changes, with trailers (second `-m` is one paragraph → git treats it
-   as trailers):
+   sanity-check. Don't move on if it's broken. Let the repo's own hooks run — **never** `--no-verify`.
+4. Commit just this task's changes, adding the trailers natively:
    ```
    git add <the files for this task>
-   git commit -m "T<n>: <task summary> (#<issue>)" -m "Michi-Task: <id>
-   Michi-Issue: <issue>"
+   git commit -m "T<n>: <task summary> (#<issue>)" \
+     --trailer "Michi-Task: <id>" --trailer "Michi-Issue: <issue>"
    ```
 5. **Push** the issue branch: `git push` (skip in local-only mode; upstream was set in §2).
    **Never** `--force`; **never** the default branch. If the push is **rejected** (non-fast-forward

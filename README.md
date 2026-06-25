@@ -29,7 +29,7 @@ The task list lives in a marker block in the **draft PR body**:
 ## Requirements
 
 - [`gh`](https://cli.github.com/) installed and authenticated (`gh auth status`).
-- `git`, and you must run the command from inside the target repository.
+- `git` **≥ 2.34** (for native `--trailer` and `%(trailers:…)` parsing), run from inside the target repository.
 - An `in-progress` label in the repo is nice-to-have (the run continues without it).
 
 ## Install
