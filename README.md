@@ -11,11 +11,9 @@ A Claude Code plugin for **GitHub-issue-driven development**. Write an issue, ru
 3. **🛠️ Implement** — one task at a time, looping **execute → verify → correct** until green (never commits broken code), then commit → **push** the `issue-<n>` branch → tick the task.
 4. **🚦 Wrap up** — wait for CI, push bounded fix commits until it's green, then mark the PR **ready for review**. It never merges, force-pushes, or closes the issue.
 
-The task list lives in **one place — the PR body** — so there's nothing to keep in sync between the issue and the PR.
+## Resumable by design 🔁
 
-### Resumable by design
-
-The task list lives in a marker block in the **draft PR body**:
+The task list lives in **one place** — a marker block in the draft PR body — so there's nothing to keep in sync:
 
 ```
 <!-- michi:plan -->
@@ -24,7 +22,7 @@ The task list lives in a marker block in the **draft PR body**:
 <!-- /michi:plan -->
 ```
 
-**Git is the source of truth for what's done** — a task is complete iff a commit carries its id (`Michi-Task: <id>` trailer). The checkboxes are just a cache of that. On a new run the plugin re-derives done-ness from the commit log, refreshes the checkboxes to match, and resumes at the first not-done task. Nothing is re-done, and a failed sync self-heals on the next run.
+**Git is the source of truth for what's done** — a task is complete iff a commit carries its id (`Michi-Task: <id>` trailer); the checkboxes are just a cache. On each run michi re-derives done-ness from the commit log, refreshes the checkboxes, and resumes at the first unfinished task. Nothing is redone, and a failed sync self-heals next run.
 
 ## Requirements
 
