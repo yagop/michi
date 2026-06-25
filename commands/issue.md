@@ -186,7 +186,14 @@ Then rebuild from git:
 4. If the branch has commits but **no PR exists yet** (interrupted bootstrap), open the PR now
    from the recovered plan and post the issue pointer comment (§2 steps 5–6).
 5. Rebuild TodoWrite, refresh the PR body so every box matches git (§4 step 5), then resume at
-   the **first not-done** task. Proceed to §4.
+   the **first not-done** task (§4).
+6. **If every task is already done, the run isn't over — route by PR state:**
+   - PR **merged** → **done** (§6 step 1): post the merged comment once, then stop.
+   - PR open but **still draft** → finish §5 (re-gate CI, mark ready); skip the summary comment if
+     you already posted one.
+   - PR open and **ready** → go straight to **§6** and watch.
+   §6a re-derives unaddressed review feedback from git (`Michi-Review` trailers), so comments that
+   arrived between runs get picked up — and may add fresh tasks, looping back through §4.
 
 ## 4. Implement (loop, one task at a time)
 
