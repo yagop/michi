@@ -9,7 +9,7 @@ Invoke `/issue <number>` and the plugin will:
 1. **Read state** — find the work (existing draft PR for the `issue-<n>` branch → fresh) and detect fresh start vs. resume. The issue *body* is never touched.
 2. **Plan & open a draft PR** (fresh start) — decompose the issue into small, independently committable tasks (each with a stable id), open a draft PR up front (`Closes #<issue>`) with the checklist in its body, and drop a one-line pointer comment on the issue: `😺 Michi — started work in <PR> 🐾`.
 3. **Implement** — one task at a time, looping **execute → verify → correct** until it's green (it won't commit broken code): then commit (tagged `T<n>: … (#<issue>)` with `Michi-Task` trailers) → **push** the `issue-<n>` branch → tick the task in the PR body. Progress is mirrored into Claude Code's TodoWrite.
-4. **Wrap up** — mark the PR **ready for review** and post a summary. It does **not** merge, force-push, or close the issue.
+4. **Wrap up** — **wait for CI** and push bounded fix commits until it's green (if it can't fix it after a few honest attempts, or the failure is flaky/unrelated, it stops and leaves the PR draft for you), then mark the PR **ready for review** and post a summary. It does **not** merge, force-push, or close the issue.
 
 The task list lives in **one place — the PR body** — so there's nothing to keep in sync between the issue and the PR.
 
@@ -59,7 +59,7 @@ Run it again on the same issue at any time to resume.
 
 ## Safety
 
-The command is scoped via `allowed-tools` to specific `gh`/`git` subcommands. Within that scope it **will** push its own `issue-<n>` branch, open/maintain a **draft** PR, and mark that PR ready when every task is done. It will **never** merge, force-push, push your default branch, or close the issue — those stay yours. (The issue closes automatically when *you* merge the PR, via `Closes #<issue>`.) Work is one commit per task on a dedicated branch, so it's easy to inspect, and the draft PR is easy to close if you don't want it.
+The command is scoped via `allowed-tools` to specific `gh`/`git` subcommands. Within that scope it **will** push its own `issue-<n>` branch, open/maintain a **draft** PR, wait for CI and push bounded fix commits to make it pass, and mark that PR ready when every task is done and CI is green. It will **never** merge, force-push, push your default branch, or close the issue — those stay yours. (The issue closes automatically when *you* merge the PR, via `Closes #<issue>`.) Work is one commit per task on a dedicated branch, so it's easy to inspect, and the draft PR is easy to close if you don't want it.
 
 > **Note:** this is a behavior change from earlier versions, which kept everything local and never pushed. michi now pushes to a non-default branch and opens a draft PR automatically.
 

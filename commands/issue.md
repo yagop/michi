@@ -12,6 +12,9 @@ allowed-tools: >-
   Bash(gh pr view:*),
   Bash(gh pr list:*),
   Bash(gh pr ready:*),
+  Bash(gh pr checks:*),
+  Bash(gh run list:*),
+  Bash(gh run view:*),
   Bash(gh api:*),
   Bash(git status:*),
   Bash(git log:*),
@@ -72,7 +75,8 @@ Parse them as whitespace-separated tokens:
 ## Safety — what michi may and won't do
 
 - **May**: create the `issue-<issue>` branch, commit, **push that branch** (fast-forward only),
-  open and maintain a **draft PR**, and **mark the PR ready for review** once every task is done.
+  open and maintain a **draft PR**, **wait for CI and push bounded fix commits** to make it pass,
+  and **mark the PR ready for review** once every task is done and CI is green.
 - **Never** (needs your explicit action): `--force`/force-push, push the **default branch**,
   **merge** the PR, or **close** the issue. The issue closes automatically via `Closes #<issue>`
   when *you* merge — michi never closes it.
@@ -209,12 +213,26 @@ For each not-done task `T<n>`, in order:
 If a task turns out wrong-sized or blocked, adjust/split the checklist inside the marker block
 (keep ids stable for unchanged tasks), explain why, and continue.
 
-## 5. Wrap up
+## 5. Wrap up — gate on CI, then ready
 
-When every task is done:
+When every task is locally green, committed, and pushed, gate the PR on CI before marking it ready.
+(Local-only mode has no PR/CI — skip to the final summary.)
 
-1. **Mark the PR ready for review**: `gh pr ready <PR> $REPO`.
-2. Post a short summary as a PR comment: the tasks done and their commits (`T<n>:` …).
-3. Stop. Tell the user the PR is **ready but not merged** — you have not merged it, force-pushed,
-   or closed the issue. Merging it (the PR says `Closes #<issue>`) is theirs to do, and that is
-   what closes the issue.
+1. **Wait for CI** on the PR head: `gh pr checks <PR> $REPO --watch --interval 30` (blocks until all
+   checks finish). **No checks configured** → nothing to wait for; go to step 4.
+2. **CI green** → go to step 4.
+3. **CI red → fix it (bounded loop, ≈3 attempts):**
+   1. Find the failures — `gh pr checks <PR> $REPO` (which failed), then read the logs:
+      `gh run list $REPO --branch issue-<issue>` to get the run id, `gh run view <id> $REPO --log-failed`.
+   2. Diagnose and fix the **actual cause** locally; re-run the relevant verify (§4 step 2) before pushing.
+   3. Commit and push the fix — a fix commit, **not** a task (no `Michi-Task` trailer, so done-ness is
+      unaffected): `git commit -m "fix: <what> (#<issue>)" --trailer "Michi-Issue: <issue>"` then `git push`.
+   4. Wait for CI again (step 1); repeat until green.
+   - **Bail — don't loop forever or burn CI:** after ≈3 honest attempts with no progress, or if the
+     failure is **infra / flaky / unrelated** to your change (re-run a flaky check *once*, don't chase
+     it), **stop**: leave the PR **draft**, comment with the failing checks and what you tried, and hand
+     off. Never mark ready with red CI.
+4. **Mark the PR ready for review**: `gh pr ready <PR> $REPO`.
+5. Post a short summary PR comment: tasks done + commits, and final CI status. Stop. The PR is **ready
+   but not merged** — you have not merged it, force-pushed, or closed the issue. Merging it (the PR says
+   `Closes #<issue>`) is theirs to do, and that closes the issue.
