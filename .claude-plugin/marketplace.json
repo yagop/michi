@@ -1,0 +1,14 @@
+{
+  "name": "michi",
+  "owner": {
+    "name": "yagop",
+    "url": "https://github.com/yagop"
+  },
+  "plugins": [
+    {
+      "name": "michi",
+      "source": "./",
+      "description": "GitHub-issue-driven development — plan, implement, and sync an issue task by task. Resumable."
+    }
+  ]
+}

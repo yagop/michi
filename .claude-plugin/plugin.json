@@ -1,0 +1,12 @@
+{
+  "name": "michi",
+  "version": "0.1.0",
+  "description": "GitHub-issue-driven development for Claude Code — plan, implement, and sync an issue task by task.",
+  "author": {
+    "name": "yagop"
+  },
+  "homepage": "https://github.com/yagop/michi",
+  "repository": "https://github.com/yagop/michi",
+  "license": "MIT",
+  "keywords": ["github", "issues", "gh", "workflow", "tasks", "resumable"]
+}
