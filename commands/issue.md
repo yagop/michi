@@ -74,9 +74,11 @@ Parse them as whitespace-separated tokens:
 
 ## Safety — what michi may and won't do
 
-- **May**: create the `issue-<issue>` branch, commit, **push that branch** (fast-forward only),
-  open and maintain a **draft PR**, **wait for CI and push bounded fix commits** to make it pass,
-  and **mark the PR ready for review** once every task is done and CI is green.
+- **May**: create the `issue-<issue>` branch **in a dedicated git worktree** (so your current
+  checkout — branch, staged changes, untracked files — is never touched), commit, **push that
+  branch** (fast-forward only), open and maintain a **draft PR**, **wait for CI and push bounded
+  fix commits** to make it pass, and **mark the PR ready for review** once every task is done and
+  CI is green.
 - **Never** (needs your explicit action): `--force`/force-push, push the **default branch**,
   **merge** the PR, or **close** the issue. The issue closes automatically via `Closes #<issue>`
   when *you* merge — michi never closes it.
@@ -251,3 +253,6 @@ When every task is locally green, committed, and pushed, gate the PR on CI befor
 5. Post a short summary PR comment: tasks done + commits, and final CI status. Stop. The PR is **ready
    but not merged** — you have not merged it, force-pushed, or closed the issue. Merging it (the PR says
    `Closes #<issue>`) is theirs to do, and that closes the issue.
+
+**Leave the worktree in place** — it keeps runs resumable. Removing it (`git worktree remove <path>`,
+then deleting the branch) stays the user's, like merging; michi never tears it down.
