@@ -11,6 +11,7 @@ allowed-tools: >-
   Bash(gh pr list:*),
   Bash(gh pr ready:*),
   Bash(gh pr checks:*),
+  Bash(gh pr comment:*),
   Bash(gh run list:*),
   Bash(gh run view:*),
   Bash(gh api:*),
