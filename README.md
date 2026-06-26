@@ -1,6 +1,6 @@
 # 😺 michi
 
-A Claude Code plugin for **GitHub-issue-driven development**. Write an issue, run `/issue <number>`, and michi plans the work, implements it task by task in a **draft PR**, and watches it through to merge — keeping everything in sync as it goes. Stop anytime — runs are **resumable**. 🐾
+A Claude Code [Agent Skill](https://code.claude.com/docs/en/skills) for **GitHub-issue-driven development**. Write an issue, run `/issue <number>`, and michi plans the work, implements it task by task in a **draft PR**, and watches it through to merge — keeping everything in sync as it goes. Stop anytime — runs are **resumable**. 🐾
 
 ## ✨ What it does
 
