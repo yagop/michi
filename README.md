@@ -31,7 +31,7 @@ The task list lives in **one place** — a marker block in the draft PR body —
 
 ## 📦 Install
 
-In Claude Code:
+michi is distributed as a Claude Code **plugin** (the packaging) and surfaces a single **Agent Skill** — `michi:issue` — once installed. In Claude Code:
 
 ```
 /plugin marketplace add yagop/michi
@@ -51,7 +51,7 @@ Run it again on the same issue anytime to resume.
 
 ## 🧩 Agent Skill
 
-michi runs through Claude Code's [Agent Skills](https://code.claude.com/docs/en/skills) system, so once installed it's surfaced as the **`michi:issue`** skill and invoked as `/issue <number>`. It's deliberately **user-invoked** — a side-effecting command (it pushes branches and opens PRs) shouldn't auto-fire.
+The plugin is just packaging; the capability is a single [Agent Skill](https://code.claude.com/docs/en/skills), **`michi:issue`**, invoked as `/issue <number>`. It's deliberately **user-invoked** — a side-effecting command (it pushes branches and opens PRs) shouldn't auto-fire.
 
 ## 🔒 Safety
 
