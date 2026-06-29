@@ -160,9 +160,9 @@ Each line's `<!--m:…-->` is its **stable id** — the key everything matches o
    (Local-only mode: skip this; put the block in a `😺 Michi` issue comment instead.)
 6. **Point the issue at the PR** — post exactly one comment, and do **not** edit the issue body:
    ```
-   😺 Michi — started work in <PR url> 🐾
+   😺 started work in <PR url>
    ```
-   `gh issue comment <issue> $REPO --body "😺 Michi — started work in <PR url> 🐾"`.
+   `gh issue comment <issue> $REPO --body "😺 started work in <PR url>"`.
 7. Mirror the tasks into TodoWrite. Proceed to §4.
 
 ## 3. Reconcile & resume
